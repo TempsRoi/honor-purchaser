@@ -1,5 +1,7 @@
 import PayButton from "@/components/PayButton";
 import RankingList from "@/components/RankingList";
+import type { JSX } from "react";
+
 
 export default function Home(): JSX.Element {
   return (

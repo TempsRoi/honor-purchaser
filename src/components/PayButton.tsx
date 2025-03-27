@@ -5,6 +5,8 @@ import { processPayment } from "@/utils/stripe";
 import { auth, db } from "@/utils/firebase";
 import { GoogleAuthProvider, signInWithPopup, onAuthStateChanged, User } from "firebase/auth";
 import { ref, onValue } from "firebase/database";
+import type { JSX } from "react";
+
 
 export default function PayButton(): JSX.Element {
   const [user, setUser] = useState<User | null>(null);
