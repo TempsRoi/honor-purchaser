@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { processPayment } from "@/utils/stripe";
+import { processCharge } from "@/utils/stripe";
 import { auth, db } from "@/utils/firebase";
 import { getAuth, signInWithPopup, GoogleAuthProvider } from "firebase/auth";
 import { ref, onValue } from "firebase/database";
