@@ -1,38 +1,55 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { processCharge } from "@/utils/stripe";
+import { processPayment } from "@/utils/stripe";
 import { auth, db } from "@/utils/firebase";
-import { getAuth, signInWithPopup, GoogleAuthProvider } from "firebase/auth";
+import { GoogleAuthProvider, signInWithPopup, onAuthStateChanged, User } from "firebase/auth";
 import { ref, onValue } from "firebase/database";
 
 export default function PayButton(): JSX.Element {
-  const [user, setUser] = useState<any>(null);
+  const [user, setUser] = useState<User | null>(null);
   const [balance, setBalance] = useState<number>(0);
 
   useEffect(() => {
-    const authInstance = getAuth();
-    authInstance.onAuthStateChanged((currentUser) => {
+    const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
       setUser(currentUser);
       if (currentUser) {
         const balanceRef = ref(db, `users/${currentUser.uid}/balance`);
-        onValue(balanceRef, (snapshot) => setBalance(snapshot.val() || 0));
+        onValue(balanceRef, (snapshot) => {
+          const val = snapshot.val();
+          setBalance(typeof val === "number" ? val : 0);
+        });
       }
     });
+
+    return () => unsubscribe(); // 🔹 クリーンアップ
   }, []);
 
   const handlePayment = async (): Promise<void> => {
+    if (!user) return;
+
     if (balance < 1) {
       alert("残高が足りません。チャージしてください。");
       return;
     }
-    await processPayment(user.uid, 1);
-    alert("1円支払い完了！");
+
+    try {
+      await processPayment(user.uid, 1);
+      alert("1円支払い完了！");
+    } catch (error) {
+      console.error("支払いエラー:", error);
+      alert("支払いに失敗しました。");
+    }
   };
 
   const handleLogin = async (): Promise<void> => {
     const provider = new GoogleAuthProvider();
-    await signInWithPopup(auth, provider);
+    try {
+      await signInWithPopup(auth, provider);
+    } catch (error) {
+      console.error("ログインエラー:", error);
+      alert("ログインに失敗しました。");
+    }
   };
 
   return (

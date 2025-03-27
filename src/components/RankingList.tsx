@@ -18,11 +18,15 @@ export default function RankingList() {
 
     const unsubscribe = onValue(rankingRef, (snapshot) => {
       const data = snapshot.val() || {};
-      const sortedData = Object.values(data)
-        .sort((a: any, b: any) => b.total - a.total)
+
+      // 🔽 ここで明示的な型を指定
+      const typedData = Object.values(data as Record<string, RankingData>);
+
+      const sortedData = typedData
+        .sort((a, b) => b.total - a.total)
         .slice(0, 10); // 🔹 上位10名を表示
 
-      setRanking(sortedData as RankingData[]);
+      setRanking(sortedData);
       setLoading(false);
     });
 
