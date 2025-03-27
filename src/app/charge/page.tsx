@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { processCharge } from "@/utils/stripe";
+import type { JSX } from "react";
 
 export default function ChargePage(): JSX.Element {
   const [amount, setAmount] = useState<string>("");
