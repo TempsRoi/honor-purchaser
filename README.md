@@ -1,5 +1,52 @@
 This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
 
+
+
+```
+honor-purchaser/
+├── src/
+│   ├── app/
+│   │   ├── api/
+│   │   │   ├── create-checkout/
+│   │   │   │   └── route.ts
+│   │   │   ├── pay/
+│   │   │   │   └── route.ts
+│   │   │   ├── ranking/
+│   │   │   │   └── route.ts
+│   │   │   └── webhook/
+│   │   │       └── route.ts
+│   │   ├── charge/
+│   │   │   ├── success/
+│   │   │   │   └── page.tsx
+│   │   │   ├── cancel/
+│   │   │   │   └── page.tsx
+│   │   │   └── page.tsx
+│   │   ├── login/
+│   │   │   └── page.tsx
+│   │   ├── profile/
+│   │   │   └── page.tsx
+│   │   ├── ranking/
+│   │   │   └── page.tsx
+│   │   ├── layout.tsx
+│   │   ├── page.tsx
+│   │   └── globals.css
+│   ├── components/
+│   │   ├── auth/
+│   │   ├── layout/
+│   │   ├── payment/
+│   │   ├── ranking/
+│   │   └── ui/
+│   ├── contexts/
+│   ├── lib/
+│   ├── stores/
+│   ├── styles/
+│   └── types/
+├── public/
+├── .env.local
+└── その他設定ファイル
+```
+
+
 ## Getting Started
 
 First, run the development server:
