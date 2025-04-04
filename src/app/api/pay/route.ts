@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { doc, updateDoc, increment, getDoc, serverTimestamp } from 'firebase-admin/firestore';
+import { getFirestore, FieldValue } from 'firebase-admin/firestore';
 import { firestore } from '@/lib/firebase-admin';
 import { useMockData } from '@/lib/utils';
 
@@ -11,19 +11,20 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Invalid request data' }, { status: 400 });
     }
 
-    // ユーザーデータの取得
     try {
-      const userRef = doc(firestore, 'users', userId);
-      const userDoc = await getDoc(userRef);
+      // Firestoreインスタンスを取得
+      const db = getFirestore();
+      const userRef = db.collection('users').doc(userId);
+      const userDoc = await userRef.get();
 
-      if (!userDoc.exists()) {
+      if (!userDoc.exists) {
         return NextResponse.json({ error: 'User not found' }, { status: 404 });
       }
 
       // 残高の更新
-      await updateDoc(userRef, {
-        balance: increment(amount),
-        lastUpdated: serverTimestamp()
+      await userRef.update({
+        balance: FieldValue.increment(amount),
+        lastUpdated: FieldValue.serverTimestamp(),
       });
 
       console.log(`Updated balance for user: ${userId} with amount: ${amount}`);
