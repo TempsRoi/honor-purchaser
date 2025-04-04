@@ -36,10 +36,13 @@ const useUserStore = create<UserStore>((set, get) => ({
         await new Promise(resolve => setTimeout(resolve, 500)); // 遅延を模倣
         set({ userData: mockUserData as UserData, loading: false });
       } else {
+        
+        console.log(userId)
         // 実際のFirestoreからデータを取得
         const userRef = doc(firestore, 'users', userId);
         const userSnap = await getDoc(userRef);
-        
+        console.log(userRef,userSnap.data())
+
         if (userSnap.exists()) {
           set({ userData: userSnap.data() as UserData, loading: false });
         } else {
@@ -101,6 +104,7 @@ const useUserStore = create<UserStore>((set, get) => ({
     if (!userId) return false;
     
     const { userData } = get();
+    console.log(userData,userData.balance)
     if (!userData || userData.balance < amount) {
       return false; // 残高不足
     }

@@ -6,7 +6,7 @@ import { auth, firestore } from '@/lib/firebase';
 import { mockUser } from '@/lib/mock/mockData';
 import { User } from '@/types';
 import { useMockData } from '@/lib/utils';
-import { doc, setDoc } from 'firebase/firestore';
+import { doc, setDoc, getDoc } from 'firebase/firestore';
 
 interface AuthContextType {
   user: User | null;
@@ -24,13 +24,31 @@ interface AuthProviderProps {
 // Firestoreにユーザー情報を保存または更新
 const saveUserToFirestore = async (user: User) => {
   try {
-    await setDoc(doc(firestore, 'users', user.uid), {
-      uid: user.uid,
-      email: user.email,
-      displayName: user.displayName,
-      photoURL: user.photoURL,
-      lastLogin: new Date().toISOString(), // 最終ログイン日時を更新
-    });
+    const userRef = doc(firestore, 'users', user.uid);
+    const userSnap = await getDoc(userRef);
+
+    // 既存ユーザーかどうかを判定
+    if (userSnap.exists()) {
+      console.log('既存ユーザーのデータを維持します');
+      await setDoc(userRef, {
+        uid: user.uid,
+        email: user.email,
+        displayName: user.displayName,
+        photoURL: user.photoURL,
+        lastLogin: new Date().toISOString(), // 最終ログイン日時を更新
+      }, { merge: true }); // 既存データを維持しつつ更新
+    } else {
+      console.log('新規ユーザーとして登録します');
+      await setDoc(userRef, {
+        uid: user.uid,
+        email: user.email,
+        displayName: user.displayName,
+        photoURL: user.photoURL,
+        lastLogin: new Date().toISOString(), // 最終ログイン日時を更新
+        balance: 10,  // 新規ユーザーのみ初期化
+        totalPaid: 0, // 新規ユーザーのみ初期化
+      });
+    }
     console.log('ユーザー情報をFirestoreに保存しました');
   } catch (error) {
     console.error('Firestoreへのユーザー保存エラー:', error);

@@ -35,6 +35,8 @@ const PayButton: React.FC<PayButtonProps> = ({
       // ブースト中は10円、通常は1円
       const amount = isBoostActive ? 10 : 1;
       
+      console.log(amount, userData.balance)
+      
       if (!userData || userData.balance < amount) {
         toast.error('残高が不足しています');
         onChargeRequired();
@@ -46,8 +48,7 @@ const PayButton: React.FC<PayButtonProps> = ({
       if (success) {
         toast.success(`${amount}円支払いました！`);
         onPaymentSuccess();
-      } else {
-        toast.error('支払い処理に失敗しました');
+      } else {toast.error('支払い処理に失敗しました');
       }
     } catch (error) {
       console.error('Payment error:', error);
