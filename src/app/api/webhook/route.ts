@@ -4,8 +4,8 @@ import { firestore } from '@/lib/firebase-admin';
 import stripe from '@/lib/stripe-server';
 import { useMockData } from '@/lib/utils';
 
-// Edge Runtimeを使用
-export const runtime = 'edge';
+// Node.js Runtimeを指定
+export const runtime = 'nodejs';
 
 export async function POST(req: NextRequest) {
   // モックモードの場合は常に成功
@@ -16,7 +16,7 @@ export async function POST(req: NextRequest) {
   try {
     // リクエストボディをテキストとして取得
     const body = await req.text();
-    const sig = req.headers.get('stripe-signature');  // ヘッダー取得方法の修正
+    const sig = req.headers.get('stripe-signature');
 
     let event;
 
