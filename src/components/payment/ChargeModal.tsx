@@ -31,50 +31,51 @@ const ChargeModal: React.FC<ChargeModalProps> = ({ isOpen, onClose }) => {
   const [selectedAmount, setSelectedAmount] = useState<number>(CHARGE_AMOUNTS[1].amount);
   const [loading, setLoading] = useState<boolean>(false);
   const isMockMode = useMockData();
-  
+
   const handleStripeCheckout = async () => {
     if (!user) {
       toast.error('ログインが必要です');
       return;
     }
-    
+
     setLoading(true);
     try {
       if (isMockMode) {
-        // モックモードでは直接チャージ
         await chargeBalance(user.uid, selectedAmount);
         toast.success(`${selectedAmount}円をチャージしました！（モックモード）`);
         onClose();
       } else {
-        // 決済セッションの作成（APIルート経由）
-        const response = await fetch('/api/create-checkout', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${await user.getIdToken()}`
-          },
-          body: JSON.stringify({
-            amount: selectedAmount,
-            userId: user.uid,
-          }),
-        });
-        
-        if (!response.ok) {
-          throw new Error('Checkout session creation failed');
-        }
-        
-        const { sessionId } = await response.json();
-        
-        // Stripeの決済ページにリダイレクト
-        const stripe = await getStripe();
-        if (!stripe) {
-          throw new Error('Failed to load Stripe');
-        }
-        
-        const { error } = await stripe.redirectToCheckout({ sessionId });
-        
-        if (error) {
-          throw error;
+        // ユーザーオブジェクトが正しいかチェック
+        if (typeof user.getIdToken === 'function') {
+          const token = await user.getIdToken();
+          const response = await fetch('/api/create-checkout', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${token}`
+            },
+            body: JSON.stringify({
+              amount: selectedAmount,
+              userId: user.uid,
+            }),
+          });
+
+          if (!response.ok) {
+            throw new Error('Checkout session creation failed');
+          }
+
+          const { sessionId } = await response.json();
+          const stripe = await getStripe();
+          if (!stripe) {
+            throw new Error('Failed to load Stripe');
+          }
+
+          const { error } = await stripe.redirectToCheckout({ sessionId });
+          if (error) {
+            throw error;
+          }
+        } else {
+          throw new Error('User object does not have getIdToken method');
         }
       }
     } catch (error) {
@@ -84,11 +85,11 @@ const ChargeModal: React.FC<ChargeModalProps> = ({ isOpen, onClose }) => {
       setLoading(false);
     }
   };
-  
+
   // デモ用の即時チャージ機能
   const handleDemoCharge = async () => {
     if (!user) return;
-    
+
     setLoading(true);
     try {
       const success = await chargeBalance(user.uid, selectedAmount);
@@ -107,16 +108,12 @@ const ChargeModal: React.FC<ChargeModalProps> = ({ isOpen, onClose }) => {
   };
 
   return (
-    <Modal
-      isOpen={isOpen}
-      onClose={onClose}
-      title="チャージ"
-    >
+    <Modal isOpen={isOpen} onClose={onClose} title="チャージ">
       <div className="space-y-6">
         <p className="text-gray-300">
           チャージ金額を選択してください。{isMockMode ? '（モックモード）' : 'Stripeで安全に決済処理を行います。'}
         </p>
-        
+
         <div className="grid grid-cols-2 gap-3 mb-6">
           {CHARGE_AMOUNTS.map((item) => (
             <button
@@ -132,12 +129,12 @@ const ChargeModal: React.FC<ChargeModalProps> = ({ isOpen, onClose }) => {
             </button>
           ))}
         </div>
-        
+
         <div className="mb-6">
           <div className="text-center mb-2 text-gray-300">選択金額</div>
           <div className="text-3xl font-bold text-center">{selectedAmount}円</div>
         </div>
-        
+
         <div className="flex flex-col space-y-3">
           <Button
             fullWidth
@@ -149,7 +146,7 @@ const ChargeModal: React.FC<ChargeModalProps> = ({ isOpen, onClose }) => {
             {isMockMode ? 'チャージする（モックモード）' : 'Stripeで決済する'}
           </Button>
         </div>
-        
+
         <p className="mt-6 text-xs text-center text-gray-400">
           {isMockMode 
             ? 'モックモードでは実際の決済は行われません。' 

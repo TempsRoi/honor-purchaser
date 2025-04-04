@@ -1,12 +1,12 @@
-// src/contexts/auth-context.tsx
 'use client';
 
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { onAuthStateChanged, signInWithPopup, GoogleAuthProvider, signOut as firebaseSignOut } from 'firebase/auth';
-import { auth } from '@/lib/firebase';
+import { auth, firestore } from '@/lib/firebase';
 import { mockUser } from '@/lib/mock/mockData';
 import { User } from '@/types';
 import { useMockData } from '@/lib/utils';
+import { doc, setDoc } from 'firebase/firestore';
 
 interface AuthContextType {
   user: User | null;
@@ -21,6 +21,22 @@ interface AuthProviderProps {
   children: ReactNode;
 }
 
+// Firestoreにユーザー情報を保存または更新
+const saveUserToFirestore = async (user: User) => {
+  try {
+    await setDoc(doc(firestore, 'users', user.uid), {
+      uid: user.uid,
+      email: user.email,
+      displayName: user.displayName,
+      photoURL: user.photoURL,
+      lastLogin: new Date().toISOString(), // 最終ログイン日時を更新
+    });
+    console.log('ユーザー情報をFirestoreに保存しました');
+  } catch (error) {
+    console.error('Firestoreへのユーザー保存エラー:', error);
+  }
+};
+
 export function AuthProvider({ children }: AuthProviderProps) {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
@@ -30,21 +46,27 @@ export function AuthProvider({ children }: AuthProviderProps) {
   const signInWithGoogle = async (): Promise<User | null> => {
     try {
       setLoading(true);
-      
+
       if (isMockMode) {
         await new Promise(resolve => setTimeout(resolve, 500));
         setUser(mockUser);
+        await saveUserToFirestore(mockUser); // モックユーザーも保存
         return mockUser;
       } else {
         const provider = new GoogleAuthProvider();
         const result = await signInWithPopup(auth, provider);
+        const firebaseUser = result.user;
+
         const user: User = {
-          uid: result.user.uid,
-          email: result.user.email,
-          displayName: result.user.displayName,
-          photoURL: result.user.photoURL
+          uid: firebaseUser.uid,
+          email: firebaseUser.email || '',
+          displayName: firebaseUser.displayName || 'No Name',
+          photoURL: firebaseUser.photoURL || '',
         };
         setUser(user);
+
+        // Firestoreに保存または更新
+        await saveUserToFirestore(user);
         return user;
       }
     } catch (error) {
@@ -75,15 +97,18 @@ export function AuthProvider({ children }: AuthProviderProps) {
 
   // 認証状態の監視
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, (firebaseUser) => {
+    const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
       if (firebaseUser) {
         const user: User = {
           uid: firebaseUser.uid,
-          email: firebaseUser.email,
-          displayName: firebaseUser.displayName,
-          photoURL: firebaseUser.photoURL
+          email: firebaseUser.email || '',
+          displayName: firebaseUser.displayName || 'No Name',
+          photoURL: firebaseUser.photoURL || '',
         };
         setUser(user);
+
+        // Firestoreに保存または更新
+        await saveUserToFirestore(user);
       } else {
         setUser(null);
       }
