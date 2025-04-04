@@ -9,6 +9,15 @@ const nextConfig = {
     };
     return config;
   },
-}
+  images: {
+    remotePatterns: [
+      {
+        protocol: 'https',
+        hostname: 'lh3.googleusercontent.com',
+        pathname: '/**', // Googleユーザーコンテンツの全てのパスを許可
+      },
+    ],
+  },
+};
 
-module.exports = nextConfig
+module.exports = nextConfig;
