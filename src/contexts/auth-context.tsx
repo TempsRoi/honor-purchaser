@@ -1,12 +1,8 @@
+// src/contexts/auth-context.tsx
 'use client';
 
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
-import { 
-  onAuthStateChanged, 
-  signInWithPopup, 
-  GoogleAuthProvider,
-  signOut as firebaseSignOut 
-} from 'firebase/auth';
+import { onAuthStateChanged, signInWithPopup, GoogleAuthProvider, signOut as firebaseSignOut } from 'firebase/auth';
 import { auth } from '@/lib/firebase';
 import { mockUser } from '@/lib/mock/mockData';
 import { User } from '@/types';
@@ -36,12 +32,10 @@ export function AuthProvider({ children }: AuthProviderProps) {
       setLoading(true);
       
       if (isMockMode) {
-        // モックモード
-        await new Promise(resolve => setTimeout(resolve, 500)); // 遅延を模倣
+        await new Promise(resolve => setTimeout(resolve, 500));
         setUser(mockUser);
         return mockUser;
       } else {
-        // 実際のFirebase認証
         const provider = new GoogleAuthProvider();
         const result = await signInWithPopup(auth, provider);
         const user: User = {
@@ -65,15 +59,11 @@ export function AuthProvider({ children }: AuthProviderProps) {
   const signOut = async (): Promise<void> => {
     try {
       setLoading(true);
-      
       if (isMockMode) {
-        // モックモード
-        await new Promise(resolve => setTimeout(resolve, 300)); // 遅延を模倣
+        await new Promise(resolve => setTimeout(resolve, 300));
       } else {
-        // 実際のFirebase認証
         await firebaseSignOut(auth);
       }
-      
       setUser(null);
     } catch (error) {
       console.error('Logout failed:', error);
@@ -85,30 +75,20 @@ export function AuthProvider({ children }: AuthProviderProps) {
 
   // 認証状態の監視
   useEffect(() => {
-    let unsubscribe: () => void;
-    
-    if (isMockMode) {
-      // モックモード: 初期状態を設定
-      setUser(mockUser);
+    const unsubscribe = onAuthStateChanged(auth, (firebaseUser) => {
+      if (firebaseUser) {
+        const user: User = {
+          uid: firebaseUser.uid,
+          email: firebaseUser.email,
+          displayName: firebaseUser.displayName,
+          photoURL: firebaseUser.photoURL
+        };
+        setUser(user);
+      } else {
+        setUser(null);
+      }
       setLoading(false);
-      unsubscribe = () => {}; // ダミー関数
-    } else {
-      // 実際のFirebase認証状態の監視
-      unsubscribe = onAuthStateChanged(auth, (firebaseUser) => {
-        if (firebaseUser) {
-          const user: User = {
-            uid: firebaseUser.uid,
-            email: firebaseUser.email,
-            displayName: firebaseUser.displayName,
-            photoURL: firebaseUser.photoURL
-          };
-          setUser(user);
-        } else {
-          setUser(null);
-        }
-        setLoading(false);
-      });
-    }
+    });
 
     return () => unsubscribe();
   }, [isMockMode]);

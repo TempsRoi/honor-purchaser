@@ -1,7 +1,7 @@
-import { initializeApp, getApps, FirebaseApp } from 'firebase/app';
+// lib/firebase.ts
+import { initializeApp, getApps, getApp, FirebaseApp } from 'firebase/app';
 import { getAuth, Auth } from 'firebase/auth';
 import { getFirestore, Firestore } from 'firebase/firestore';
-import { useMockData } from './utils';
 
 // 環境変数からの設定情報
 const firebaseConfig = {
@@ -13,23 +13,18 @@ const firebaseConfig = {
   appId: process.env.NEXT_PUBLIC_FIREBASE_APP_ID,
 };
 
-// Firebase初期化（モックモードでなければ）
-let app: FirebaseApp;
-let auth: Auth;
-let firestore: Firestore;
+// Firebaseアプリの初期化
+const createFirebaseApp = (): FirebaseApp => {
+  try {
+    return getApp();
+  } catch {
+    return initializeApp(firebaseConfig);
+  }
+};
 
-// モックモードのチェック
-const isMockMode = useMockData();
-
-if (!isMockMode && getApps().length === 0) {
-  app = initializeApp(firebaseConfig);
-  auth = getAuth(app);
-  firestore = getFirestore(app);
-} else {
-  // モックモードの場合はダミーオブジェクト
-  app = {} as FirebaseApp;
-  auth = {} as Auth;
-  firestore = {} as Firestore;
-}
+// Firebase初期化
+const app = createFirebaseApp();
+const auth = getAuth(app);
+const firestore = getFirestore(app);
 
 export { app, auth, firestore };
