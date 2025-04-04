@@ -3,39 +3,40 @@ import { getFirestore, FieldValue } from 'firebase-admin/firestore';
 import { firestore } from '@/lib/firebase-admin';
 import { useMockData } from '@/lib/utils';
 
-export async function POST(req: NextRequest) {
+export async function GET(req: NextRequest) {
   try {
-    const { userId, amount } = await req.json();
-
-    if (!userId || !amount) {
-      return NextResponse.json({ error: 'Invalid request data' }, { status: 400 });
-    }
+    const { limit } = await req.json();
+    const limitValue = limit ? parseInt(limit) : 10;
 
     try {
       // Firestoreインスタンスを取得
       const db = getFirestore();
-      const userRef = db.collection('users').doc(userId);
-      const userDoc = await userRef.get();
+      const rankingRef = db.collection('rankings');
+      const rankingQuery = rankingRef
+        .where('type', '==', 'daily')
+        .orderBy('amount', 'desc')
+        .limit(limitValue);
 
-      if (!userDoc.exists) {
-        return NextResponse.json({ error: 'User not found' }, { status: 404 });
+      const rankingSnapshot = await rankingQuery.get();
+
+      if (rankingSnapshot.empty) {
+        return NextResponse.json({ rankings: [] });
       }
 
-      // 残高の更新
-      await userRef.update({
-        balance: FieldValue.increment(amount),
-        lastUpdated: FieldValue.serverTimestamp(),
-      });
+      const rankings = rankingSnapshot.docs.map((doc) => ({
+        id: doc.id,
+        ...doc.data(),
+      }));
 
-      console.log(`Updated balance for user: ${userId} with amount: ${amount}`);
+      console.log(`Fetched ${rankings.length} rankings`);
 
-      return NextResponse.json({ success: true });
+      return NextResponse.json({ rankings });
     } catch (error) {
-      console.error('Firestore update error:', error);
-      return NextResponse.json({ error: 'Firestore update failed' }, { status: 500 });
+      console.error('Firestore query error:', error);
+      return NextResponse.json({ error: 'Firestore query failed' }, { status: 500 });
     }
   } catch (error) {
-    console.error('Error updating user balance:', error);
+    console.error('Error fetching rankings:', error);
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }
