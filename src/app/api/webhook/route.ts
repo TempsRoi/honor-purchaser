@@ -1,9 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { headers } from 'next/headers';
 import { doc, updateDoc, increment, setDoc, serverTimestamp } from 'firebase/firestore';
 import { firestore } from '@/lib/firebase-admin';
 import stripe from '@/lib/stripe-server';
 import { useMockData } from '@/lib/utils';
+
+// Edge Runtimeを使用
+export const runtime = 'edge';
 
 export async function POST(req: NextRequest) {
   // モックモードの場合は常に成功
@@ -12,12 +14,13 @@ export async function POST(req: NextRequest) {
   }
 
   try {
+    // リクエストボディをテキストとして取得
     const body = await req.text();
-    const sig = headers().get('stripe-signature');
-    
+    const sig = req.headers.get('stripe-signature');  // ヘッダー取得方法の修正
+
     let event;
-    
-    // イベントの検証
+
+    // Stripe Webhookの検証
     try {
       if (!sig || !process.env.STRIPE_WEBHOOK_SECRET) {
         throw new Error('Webhook secret or signature missing');
@@ -27,23 +30,23 @@ export async function POST(req: NextRequest) {
       console.error(`Webhook Error: ${err.message}`);
       return NextResponse.json({ error: `Webhook Error: ${err.message}` }, { status: 400 });
     }
-    
-    // イベントタイプに基づいた処理
+
+    // イベントタイプが "checkout.session.completed" の場合の処理
     if (event.type === 'checkout.session.completed') {
       const session = event.data.object;
-      
+
       // メタデータからユーザーIDと金額を取得
       const { userId, amount } = session.metadata || {};
-      
+
       if (userId && amount) {
         try {
-          // ユーザーの残高を更新
+          // Firestoreのユーザーデータ更新
           const userRef = doc(firestore, 'users', userId);
           await updateDoc(userRef, {
             balance: increment(parseInt(amount)),
             lastCharged: serverTimestamp(),
           });
-          
+
           // 決済履歴を保存
           const paymentRef = doc(firestore, 'payments', session.id);
           await setDoc(paymentRef, {
@@ -53,7 +56,7 @@ export async function POST(req: NextRequest) {
             paymentId: session.payment_intent,
             timestamp: serverTimestamp(),
           });
-          
+
           console.log(`Successful charge: ${userId} charged ${amount}JPY`);
         } catch (error) {
           console.error('Firestore update error:', error);
@@ -61,17 +64,10 @@ export async function POST(req: NextRequest) {
         }
       }
     }
-    
+
     return NextResponse.json({ received: true });
   } catch (error) {
     console.error('Webhook processing error:', error);
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }
-
-// メタデータを指定
-export const config = {
-  api: {
-    bodyParser: false,
-  },
-};
