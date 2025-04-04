@@ -1,12 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { doc, updateDoc, increment, setDoc, getDoc, serverTimestamp } from 'firebase/firestore';
+import { doc, updateDoc, increment, getDoc, serverTimestamp } from 'firebase-admin/firestore';
 import { firestore } from '@/lib/firebase-admin';
 import { useMockData } from '@/lib/utils';
-
-// 型ガード関数: Firestoreかどうかを判定
-function isFirestore(instance: any): instance is FirebaseFirestore.Firestore {
-  return instance && typeof instance.collection === 'function';
-}
 
 export async function POST(req: NextRequest) {
   try {
@@ -16,8 +11,8 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Invalid request data' }, { status: 400 });
     }
 
-    // ユーザーデータの取得（型ガードを適用）
-    if (isFirestore(firestore)) {
+    // ユーザーデータの取得
+    try {
       const userRef = doc(firestore, 'users', userId);
       const userDoc = await getDoc(userRef);
 
@@ -34,9 +29,9 @@ export async function POST(req: NextRequest) {
       console.log(`Updated balance for user: ${userId} with amount: ${amount}`);
 
       return NextResponse.json({ success: true });
-    } else {
-      console.error('Invalid Firestore instance');
-      return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+    } catch (error) {
+      console.error('Firestore update error:', error);
+      return NextResponse.json({ error: 'Firestore update failed' }, { status: 500 });
     }
   } catch (error) {
     console.error('Error updating user balance:', error);
