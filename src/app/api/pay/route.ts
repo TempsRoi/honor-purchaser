@@ -28,7 +28,16 @@ export async function POST(req: NextRequest) {
     }
     
     // ユーザーデータの取得
-    const userRef = doc(firestore, 'users', userId);
+function isRealFirestore(db: any): db is Firestore {
+  return typeof db.collection === 'function';
+}
+
+let userRef;
+if (isRealFirestore(firestore)) {
+  userRef = doc(firestore, 'users', userId);
+} else {
+  userRef = firestore.collection('users').doc(userId);
+}
     const userDoc = await getDoc(userRef);
     
     if (!userDoc.exists()) {

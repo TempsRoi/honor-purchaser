@@ -70,5 +70,8 @@ export async function POST(req: NextRequest) {
 }
 
 // メタデータを指定
-export const runtime = 'nodejs';
-export const preferredRegion = 'auto';
+export const config = {
+  api: {
+    bodyParser: false,
+  },
+};
