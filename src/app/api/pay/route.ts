@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { doc, getDoc, updateDoc, increment } from 'firebase/firestore';
+import { doc, getDoc, updateDoc, increment, Firestore } from 'firebase/firestore';
 import { firestore } from '@/lib/firebase-admin';
 
 // 型ガード関数をブロック外に定義
