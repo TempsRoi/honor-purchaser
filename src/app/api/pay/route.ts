@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { doc, getDoc, updateDoc, increment, Firestore } from 'firebase/firestore';
+import { doc, getDoc, updateDoc, increment, Firestore, DocumentReference, DocumentData } from 'firebase/firestore';
 import { firestore } from '@/lib/firebase-admin';
 
 // 型ガード関数をブロック外に定義
@@ -16,12 +16,12 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Invalid amount' }, { status: 400 });
     }
 
-    let userRef;
+    let userRef: DocumentReference<DocumentData>;
     if (isRealFirestore(firestore)) {
       userRef = doc(firestore, 'users', userId);
     } else {
       // MockFirestore対応
-      userRef = firestore.collection('users').doc(userId);
+      userRef = firestore.collection('users').doc(userId) as unknown as DocumentReference<DocumentData>;
     }
 
     const userDoc = await getDoc(userRef);
