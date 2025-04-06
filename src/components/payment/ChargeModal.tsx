@@ -1,6 +1,5 @@
 import { User } from 'firebase/auth';
 
-
 async function handlePayment(user: User | null) {
   if (!user) {
     console.error('User is not authenticated');
