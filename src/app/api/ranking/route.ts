@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { collection, query, where, orderBy, limit, getDocs, Firestore, DocumentReference, DocumentData } from 'firebase/firestore';
+import { collection, query, where, orderBy, limit, getDocs, Firestore, DocumentData, Query } from 'firebase/firestore';
 import { firestore } from '@/lib/firebase-admin';
 
 // 型ガード関数をブロック外に定義
@@ -12,7 +12,8 @@ export async function GET(req: NextRequest) {
     const { searchParams } = new URL(req.url);
     const limitValue = parseInt(searchParams.get('limit') || '10');
 
-    let rankingQuery;
+    let rankingQuery: Query<DocumentData>;
+
     if (isRealFirestore(firestore)) {
       rankingQuery = query(
         collection(firestore, 'rankings'),
@@ -21,7 +22,14 @@ export async function GET(req: NextRequest) {
         limit(limitValue)
       );
     } else {
-      rankingQuery = firestore.collection('rankings') as unknown as DocumentReference<DocumentData>;
+      // MockFirestore対応: コレクションとして扱う
+      const rankingsCollection = firestore.collection('rankings');
+      rankingQuery = query(
+        rankingsCollection as unknown as Query<DocumentData>,
+        where('type', '==', 'daily'),
+        orderBy('amount', 'desc'),
+        limit(limitValue)
+      );
     }
 
     const rankingSnapshot = await getDocs(rankingQuery);
