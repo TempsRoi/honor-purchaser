@@ -22,33 +22,39 @@ const PayButton: React.FC<PayButtonProps> = ({
   const { userData, payAmount } = useUserStore();
   const { isBoostActive } = useBoostStore();
   const [isLoading, setIsLoading] = useState(false);
-  
+
   const handlePayment = async () => {
     if (!userId) {
       onLoginRequired();
       return;
     }
-    
+
+    if (!userData) {
+      toast.error('ユーザー情報が取得できません');
+      onChargeRequired();
+      return;
+    }
+
     setIsLoading(true);
-    
+
     try {
-      // ブースト中は10円、通常は1円
       const amount = isBoostActive ? 10 : 1;
-      
-      console.log(amount, userData.balance)
-      
-      if (!userData || userData.balance < amount) {
+
+      console.log(amount, userData.balance);
+
+      if (userData.balance < amount) {
         toast.error('残高が不足しています');
         onChargeRequired();
         return;
       }
-      
+
       const success = await payAmount(userId, amount);
-      
+
       if (success) {
         toast.success(`${amount}円支払いました！`);
         onPaymentSuccess();
-      } else {toast.error('支払い処理に失敗しました');
+      } else {
+        toast.error('支払い処理に失敗しました');
       }
     } catch (error) {
       console.error('Payment error:', error);
@@ -57,16 +63,16 @@ const PayButton: React.FC<PayButtonProps> = ({
       setIsLoading(false);
     }
   };
-  
+
   return (
     <button
       onClick={handlePayment}
       disabled={isLoading}
       className={`
         relative overflow-hidden 
-        ${isBoostActive 
-          ? 'bg-gradient-to-r from-yellow-500 to-amber-600 hover:from-yellow-600 hover:to-amber-700' 
-          : 'bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700'} 
+        ${isBoostActive
+          ? 'bg-gradient-to-r from-yellow-500 to-amber-600 hover:from-yellow-600 hover:to-amber-700'
+          : 'bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700'}
         text-white font-bold py-6 px-8 rounded-full shadow-lg transform hover:scale-105 transition-all duration-300 
         focus:outline-none focus:ring-2 focus:ring-purple-400 focus:ring-opacity-50 mb-8 w-64 h-64 flex flex-col items-center justify-center
         ${isLoading ? 'opacity-75 cursor-not-allowed' : ''}
