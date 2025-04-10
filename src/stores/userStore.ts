@@ -29,19 +29,22 @@ const useUserStore = create<UserStore>((set, get) => ({
     }
 
     set({ loading: true, error: null });
-    
+
     try {
       if (useMockData()) {
         // モックデータを使用
         await new Promise(resolve => setTimeout(resolve, 500)); // 遅延を模倣
-        set({ userData: mockUserData as UserData, loading: false });
+        const safeMockData: UserData = {
+          ...mockUserData,
+          photoURL: undefined, // ← nullではなくundefinedに上書き
+        };
+        set({ userData: safeMockData, loading: false });
       } else {
-        
-        console.log(userId)
-        // 実際のFirestoreからデータを取得
+        console.log(userId);
+        // Firestoreからデータを取得
         const userRef = doc(firestore, 'users', userId);
         const userSnap = await getDoc(userRef);
-        console.log(userRef,userSnap.data())
+        console.log(userRef, userSnap.data());
 
         if (userSnap.exists()) {
           set({ userData: userSnap.data() as UserData, loading: false });
@@ -58,11 +61,10 @@ const useUserStore = create<UserStore>((set, get) => ({
   // 残高のチャージ
   chargeBalance: async (userId: string, amount: number): Promise<boolean> => {
     if (!userId) return false;
-    
+
     try {
       if (useMockData()) {
-        // モックデータを使用
-        await new Promise(resolve => setTimeout(resolve, 500)); // 遅延を模倣
+        await new Promise(resolve => setTimeout(resolve, 500));
         const { userData } = get();
         if (userData) {
           set({
@@ -73,14 +75,12 @@ const useUserStore = create<UserStore>((set, get) => ({
           });
         }
       } else {
-        // 実際のFirestoreを更新
         const userRef = doc(firestore, 'users', userId);
         await updateDoc(userRef, {
           balance: increment(amount),
           lastUpdated: serverTimestamp()
         });
-        
-        // ストア内のデータを更新
+
         const { userData } = get();
         if (userData) {
           set({
@@ -91,7 +91,7 @@ const useUserStore = create<UserStore>((set, get) => ({
           });
         }
       }
-      
+
       return true;
     } catch (error) {
       console.error('Error charging balance:', error);
@@ -102,17 +102,16 @@ const useUserStore = create<UserStore>((set, get) => ({
   // 支払い（1円または10円）
   payAmount: async (userId: string, amount: number): Promise<boolean> => {
     if (!userId) return false;
-    
+
     const { userData } = get();
-    console.log(userData,userData.balance)
+    console.log(userData, userData?.balance);
     if (!userData || userData.balance < amount) {
-      return false; // 残高不足
+      return false;
     }
-    
+
     try {
       if (useMockData()) {
-        // モックデータを使用
-        await new Promise(resolve => setTimeout(resolve, 300)); // 遅延を模倣
+        await new Promise(resolve => setTimeout(resolve, 300));
         set({
           userData: {
             ...userData,
@@ -121,15 +120,13 @@ const useUserStore = create<UserStore>((set, get) => ({
           }
         });
       } else {
-        // 実際のFirestoreを更新
         const userRef = doc(firestore, 'users', userId);
         await updateDoc(userRef, {
           balance: increment(-amount),
           totalPaid: increment(amount),
           lastPayment: serverTimestamp()
         });
-        
-        // ストア内のデータを更新
+
         set({
           userData: {
             ...userData,
@@ -138,7 +135,7 @@ const useUserStore = create<UserStore>((set, get) => ({
           }
         });
       }
-      
+
       return true;
     } catch (error) {
       console.error('Error processing payment:', error);
