@@ -2,7 +2,7 @@ import { initializeApp, cert, getApps } from 'firebase-admin/app';
 import { getAuth, Auth } from 'firebase-admin/auth';
 import { getFirestore, Firestore } from 'firebase-admin/firestore';
 
-const isMockMode = process.env.NEXT_PUBLIC_USE_MOCK_DATA === 'true';
+const isMockMode = process.env.NEXT_PUBLIC_USE_MOCK_DATA === 'false';
 
 // カスタム型定義（モック用）
 type MockAuth = {

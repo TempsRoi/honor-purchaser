@@ -70,5 +70,5 @@ export function getRankColor(rank: number): string {
  * 環境変数に基づいてモック使用フラグを取得
  */
 export function useMockData(): boolean {
-  return process.env.NEXT_PUBLIC_USE_MOCK_DATA === 'true';
+  return process.env.NEXT_PUBLIC_USE_MOCK_DATA === 'false';
 }

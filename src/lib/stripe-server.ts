@@ -2,7 +2,7 @@ import { useMockData } from './utils';
 import Stripe from 'stripe';
 
 // モックモードのチェック
-const isMockMode = process.env.NEXT_PUBLIC_USE_MOCK_DATA === 'true';
+const isMockMode = process.env.NEXT_PUBLIC_USE_MOCK_DATA === 'false';
 
 // モックStripeオブジェクト
 const mockStripe = {
