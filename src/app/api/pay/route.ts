@@ -1,40 +1,40 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getFirestore, FieldValue } from 'firebase-admin/firestore';
-import { firestore } from '@/lib/firebase-admin';
-import { useMockData } from '@/lib/utils';
+import { firestore, isMockFirestore } from '@/lib/firebase-admin';
 
 export async function GET(req: NextRequest) {
   try {
-    const { limit } = await req.json();
+    const { limit } = await req.json?.() || {};
     const limitValue = limit ? parseInt(limit) : 10;
 
-    try {
-      // Firestoreインスタンスを取得
-      const db = getFirestore();
-      const rankingRef = db.collection('rankings');
-      const rankingQuery = rankingRef
-        .where('type', '==', 'daily')
-        .orderBy('amount', 'desc')
-        .limit(limitValue);
+    if (isMockFirestore(firestore)) {
+      // モックランキングデータ
+      const mockRankings = [
+        { id: '1', name: 'Mock User A', amount: 100 },
+        { id: '2', name: 'Mock User B', amount: 80 },
+      ];
 
-      const rankingSnapshot = await rankingQuery.get();
-
-      if (rankingSnapshot.empty) {
-        return NextResponse.json({ rankings: [] });
-      }
-
-      const rankings = rankingSnapshot.docs.map((doc) => ({
-        id: doc.id,
-        ...doc.data(),
-      }));
-
-      console.log(`Fetched ${rankings.length} rankings`);
-
-      return NextResponse.json({ rankings });
-    } catch (error) {
-      console.error('Firestore query error:', error);
-      return NextResponse.json({ error: 'Firestore query failed' }, { status: 500 });
+      return NextResponse.json({ rankings: mockRankings });
     }
+
+    // 実際のFirestoreを使用
+    const rankingRef = firestore
+      .collection('rankings')
+      .where('type', '==', 'daily')
+      .orderBy('amount', 'desc')
+      .limit(limitValue);
+
+    const snapshot = await rankingRef.get();
+
+    if (snapshot.empty) {
+      return NextResponse.json({ rankings: [] });
+    }
+
+    const rankings = snapshot.docs.map((doc) => ({
+      id: doc.id,
+      ...doc.data(),
+    }));
+
+    return NextResponse.json({ rankings });
   } catch (error) {
     console.error('Error fetching rankings:', error);
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });

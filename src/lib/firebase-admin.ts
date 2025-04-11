@@ -1,10 +1,10 @@
-import { initializeApp, cert, getApps, getApp } from 'firebase-admin/app';
+import { initializeApp, cert, getApps } from 'firebase-admin/app';
 import { getAuth, Auth } from 'firebase-admin/auth';
 import { getFirestore, Firestore } from 'firebase-admin/firestore';
 
 const isMockMode = process.env.NEXT_PUBLIC_USE_MOCK_DATA === 'true';
 
-// カスタム型定義
+// カスタム型定義（モック用）
 type MockAuth = {
   verifyIdToken: () => Promise<{ uid: string }>;
 };
@@ -19,7 +19,7 @@ type MockFirestore = {
   };
 };
 
-// モックモードの場合のダミーオブジェクトを作成
+// モックオブジェクトの定義
 const mockAuth: MockAuth = {
   verifyIdToken: async () => ({ uid: 'mock-user-id' }),
 };
@@ -37,16 +37,21 @@ const mockFirestore: MockFirestore = {
   }),
 };
 
-// 型ガード関数
+// 型ガード
 function isMockAuth(auth: unknown): auth is MockAuth {
   return typeof (auth as MockAuth).verifyIdToken === 'function';
 }
 
-function isMockFirestore(firestore: unknown): firestore is MockFirestore {
-  return typeof (firestore as MockFirestore).collection === 'function';
+// 🔧 この関数を追加（ここが新しい）
+function isMockFirestore(db: any): db is MockFirestore {
+  return (
+    typeof db?.collection === 'function' &&
+    typeof db.collection('x')?.doc === 'function' &&
+    typeof db.collection('x')?.where !== 'function' // 本物の Firestore にはある
+  );
 }
 
-// Firebase Adminの初期化関数
+// Firebase Admin の初期化関数
 function initializeFirebaseAdmin(): { auth: Auth | MockAuth; firestore: Firestore | MockFirestore } {
   if (isMockMode) {
     return {
@@ -55,21 +60,22 @@ function initializeFirebaseAdmin(): { auth: Auth | MockAuth; firestore: Firestor
     };
   }
 
-  let serviceAccount: any;
+  let serviceAccount: any = null;
 
   try {
     if (process.env.FIREBASE_SERVICE_ACCOUNT_KEY) {
       const decodedKey = Buffer.from(
         process.env.FIREBASE_SERVICE_ACCOUNT_KEY,
         'base64'
-      ).toString();
+      ).toString('utf-8');
       serviceAccount = JSON.parse(decodedKey);
     }
   } catch (error) {
     console.error('Error parsing Firebase service account:', error);
   }
 
-  if (!getApps().length) {
+  // 安全な初期化条件（nullチェックも追加）
+  if (serviceAccount && !getApps().length) {
     initializeApp({
       credential: cert(serviceAccount),
       projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID,
@@ -82,16 +88,16 @@ function initializeFirebaseAdmin(): { auth: Auth | MockAuth; firestore: Firestor
   };
 }
 
-// Firebase Adminのインスタンスを作成
+// Admin SDK のインスタンス化
 const { auth, firestore } = initializeFirebaseAdmin();
 
-// 型チェックしてから利用
+// デバッグログ（任意）
 if (isMockAuth(auth)) {
-  console.log("Mock Auth is being used");
+  console.log("✅ Using Mock Firebase Auth");
 }
-
 if (isMockFirestore(firestore)) {
-  console.log("Mock Firestore is being used");
+  console.log("✅ Using Mock Firestore");
 }
 
-export { auth, firestore };
+// 🔁 ここで型ガードも export して他で使えるように
+export { auth, firestore, isMockFirestore, isMockAuth };
