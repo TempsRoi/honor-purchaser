@@ -23,6 +23,9 @@ const PayButton: React.FC<PayButtonProps> = ({
   const { isBoostActive } = useBoostStore();
   const [isLoading, setIsLoading] = useState(false);
 
+  //チャージボタン確認用
+  console.log("🔥 userData:", userData);
+
   const handlePayment = async () => {
     if (!userId) {
       onLoginRequired();
