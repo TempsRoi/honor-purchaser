@@ -45,7 +45,14 @@ const PayButton: React.FC<PayButtonProps> = ({
 
       console.log(amount, userData.balance);
 
-      if (userData.balance < amount) {
+      ///if (userData.balance < amount) {
+      ///  toast.error('残高が不足しています');
+      ///  onChargeRequired();
+      ///  return;
+      ///}
+      
+      if (!userData || typeof userData.balance !== 'number' || userData.balance < amount) {
+        console.log('💥 残高不足またはuserDataが不正です', userData);
         toast.error('残高が不足しています');
         onChargeRequired();
         return;
