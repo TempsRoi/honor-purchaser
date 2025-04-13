@@ -20,7 +20,7 @@ export default function Home() {
   const { userData, fetchUserData } = useUserStore();
   const { rankings, fetchRankings } = useRankingStore();
   const { isBoostActive, boostCountdown, nextBoostTime, fetchBoostStatus } = useBoostStore();
-  
+
   const [showLoginModal, setShowLoginModal] = useState(false);
   const [showChargeModal, setShowChargeModal] = useState(false);
   const [showRanking, setShowRanking] = useState(true);
@@ -34,10 +34,10 @@ export default function Home() {
     }
     fetchRankings();
     fetchBoostStatus();
-    
+
     const rankingInterval = setInterval(fetchRankings, 60000);
     const boostInterval = setInterval(fetchBoostStatus, 30000);
-    
+
     return () => {
       clearInterval(rankingInterval);
       clearInterval(boostInterval);
@@ -46,7 +46,7 @@ export default function Home() {
 
   return (
     <div className="flex flex-col min-h-screen bg-gradient-to-br from-gray-800 to-gray-900 text-white">
-      <Header 
+      <Header
         onLoginClick={() => setShowLoginModal(true)}
         onToggleRanking={() => setShowRanking(!showRanking)}
         showRanking={showRanking}
@@ -59,8 +59,8 @@ export default function Home() {
           </div>
         )}
 
-        <RankingPanel 
-          rankings={rankings} 
+        <RankingPanel
+          rankings={rankings}
           currentUserId={user?.uid}
           showRanking={showRanking}
           onToggleRanking={() => setShowRanking(!showRanking)}
@@ -73,10 +73,26 @@ export default function Home() {
             onChargeRequired={() => setShowChargeModal(true)}
             onPaymentSuccess={() => fetchRankings()}
           />
+
+          {/* 🔽 残高表示とチャージボタンの追加 */}
+          {user && userData && (
+            <div className="mt-4 flex flex-col items-center space-y-2">
+              <p className="text-lg">
+                現在の残高：<span className="font-bold">{userData.balance}円</span>
+              </p>
+              <button
+                onClick={() => setShowChargeModal(true)}
+                className="bg-red-500 text-white px-6 py-2 rounded hover:bg-red-600 transition"
+              >
+                チャージ
+              </button>
+            </div>
+          )}
         </div>
       </main>
 
       <Footer />
+
       <LoginModal
         isOpen={showLoginModal}
         onClose={() => setShowLoginModal(false)}
